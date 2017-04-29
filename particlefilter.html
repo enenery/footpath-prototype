@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+<!--Set Language to English-->
+<html lang="en">
+<head>
+    
+    <!-- Bunch of metadata stuff and title -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Footpath Prototype: Particle Filter Example</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name"viewport" content="width=device-width, initial-scale=1.0">
+
+     <!-- jquery and jqueryui -->
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <!-- <link href="external/jquery-ui.min.css" rel="stylesheet">
+    <script src="external/jquery-ui.min.js"></script> -->
+
+    <!-- bootstrap -->
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Styling -->
+    <style>
+        body {
+            font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        }
+        h2 {
+            text-align: center;
+            font-size: 30px;
+        }
+        #game {
+            width: 50%;
+            margin: 0 auto;
+        }
+        #buttons {
+            width: 50%;
+            margin: 0 auto;
+        }
+        #buttons2 {
+            width: 50%;
+            margin: 0 auto;
+        }
+    </style>
+    
+    <script src="phaser.min.js"></script>
+</head>
+<body>
+    <div>
+        <h2>Particle Filter Tutorial</h2>
+    </div>
+    <div>
+        <div id="game"></div>
+        <br>
+        <div id="buttons">
+            <button type="button" class="btn btn-primary" onclick="move_ball()">Move The Ball</button>
+            <button type="button" class="btn btn-primary" onclick="update_distribution_control()">Update Belief to Prior</button>
+            <button type="button" class="btn btn-primary">Take Measurement</button>
+            <button type="button" class="btn btn-primary">Update Belief to Posterior</button>
+        </div>
+        <br>
+        <div id="buttons2">
+            <button type="button" class="btn btn-success">Looped Particle Filter</button>
+            <button type="button" class="btn btn-danger">Reset</button>
+        </div>
+    </div>
+    <script type="text/javascript">
+       
+        
+        var STEP_LENGTH = 50;
+        var step_displacement = STEP_LENGTH; 
+        var ST_COV = 100;
+
+        // Initial Phaser Game
+        var game = new Phaser.Game(718, 60, Phaser.AUTO, 'game', 
+                {preload: preload, create: create, update: update, render: render});
+        
+        function preload() {
+            // This is the visually impaired user
+            game.load.image("ball", "nav.png");
+            game.load.image("particle", "nav.svg");            
+        }
+
+        function create() {
+            // Background
+            game.stage.backgroundColor = "#FFFFFFF";
+            
+            // Physics
+            game.physics.startSystem(Phaser.Physics.ARCADE);
+            
+            // Visually Impaired User
+            disk = game.add.sprite(350, 30, "ball");
+            disk.width = 50;
+            disk.height = 50;
+
+            // Enable Physics
+            game.physics.arcade.enable(disk);
+            disk.anchor.setTo(0.5, 0.5);
+            disk.body.collideWorldBounds = true;
+
+            // Make Phaser Group of Particles
+            particles = game.add.group();
+            for(var i = 0; i < 150; i++) {
+                prtcle = particles.create( 718*Math.random(), 30, "particle");
+                prtcle.width = 5;
+                prtcle.height = 5; 
+            }
+        
+        }
+
+        function update() {
+            
+        }
+
+        function render() {
+
+        }
+
+        // Semi Random Action of the ball
+        function move_ball() {
+           
+            if (disk.x > 718 - 1.5*disk.width) { 
+                step_displacement = -STEP_LENGTH;
+            }
+            else if (disk.x < 1.5*disk.width) { 
+                step_displacement = STEP_LENGTH;
+            }
+            else {
+                if (Math.random() > 0.5)  {
+                    step_displacement = STEP_LENGTH;
+                }
+                else { 
+                    step_displacement = -STEP_LENGTH;
+                } 
+            }
+
+            disk.x += step_displacement;
+        }
+
+        function update_distribution_control() {
+            particles.forEach(function(prtcl) {
+                prtcl.x += (step_displacement + ST_COV*randn());
+            }, this); 
+        }
+
+
+        // Approximate Gaussian Distribution by CLT
+        // sum of iid variables approaches normal distribution
+        function randn() {
+            var numsamples = 12
+            var rand = 0;
+            for (var i = 0; i < numsamples; i++) {
+                rand += Math.random();
+            }
+            return (rand - (numsamples/2));
+        }
+
+    </script>
+</body>
+</html>
