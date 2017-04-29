@@ -30,15 +30,11 @@
             font-size: 30px;
         }
         #game {
-            width: 50%;
+            width: 75%;
             margin: 0 auto;
         }
         #buttons {
-            width: 50%;
-            margin: 0 auto;
-        }
-        #buttons2 {
-            width: 50%;
+            width: 60%;
             margin: 0 auto;
         }
     </style>
@@ -57,55 +53,32 @@
             <button type="button" class="btn btn-primary" onclick="update_distribution_control()">Update Belief to Prior</button>
             <button type="button" class="btn btn-primary">Take Measurement</button>
             <button type="button" class="btn btn-primary">Update Belief to Posterior</button>
-        </div>
-        <br>
-        <div id="buttons2">
             <button type="button" class="btn btn-success">Looped Particle Filter</button>
-            <button type="button" class="btn btn-danger">Reset</button>
+            <button type="button" class="btn btn-danger" onclick="reset()">Reset</button>
         </div>
     </div>
     <script type="text/javascript">
        
-        
         var STEP_LENGTH = 50;
         var step_displacement = STEP_LENGTH; 
         var ST_COV = 100;
 
-        // Initial Phaser Game
-        var game = new Phaser.Game(718, 60, Phaser.AUTO, 'game', 
+        var GAME_WIDTH = 1077;
+        var GAME_HEIGHT = 60;
+        var game = new Phaser.Game(GAME_WIDTH, GAME_HEIGHT, Phaser.AUTO, 'game', 
                 {preload: preload, create: create, update: update, render: render});
         
         function preload() {
-            // This is the visually impaired user
             game.load.image("ball", "nav.png");
             game.load.image("particle", "nav.svg");            
         }
 
         function create() {
-            // Background
             game.stage.backgroundColor = "#FFFFFFF";
-            
-            // Physics
             game.physics.startSystem(Phaser.Physics.ARCADE);
-            
-            // Visually Impaired User
-            disk = game.add.sprite(350, 30, "ball");
-            disk.width = 50;
-            disk.height = 50;
+            make_disk();
+            make_particles();
 
-            // Enable Physics
-            game.physics.arcade.enable(disk);
-            disk.anchor.setTo(0.5, 0.5);
-            disk.body.collideWorldBounds = true;
-
-            // Make Phaser Group of Particles
-            particles = game.add.group();
-            for(var i = 0; i < 150; i++) {
-                prtcle = particles.create( 718*Math.random(), 30, "particle");
-                prtcle.width = 5;
-                prtcle.height = 5; 
-            }
-        
         }
 
         function update() {
@@ -116,10 +89,8 @@
 
         }
 
-        // Semi Random Action of the ball
         function move_ball() {
-           
-            if (disk.x > 718 - 1.5*disk.width) { 
+            if (disk.x > GAME_WIDTH - 1.5*disk.width) { 
                 step_displacement = -STEP_LENGTH;
             }
             else if (disk.x < 1.5*disk.width) { 
@@ -127,13 +98,12 @@
             }
             else {
                 if (Math.random() > 0.5)  {
-                    step_displacement = STEP_LENGTH;
+                    step_displacement = -STEP_LENGTH;
                 }
                 else { 
-                    step_displacement = -STEP_LENGTH;
+                    step_displacement = STEP_LENGTH;
                 } 
             }
-
             disk.x += step_displacement;
         }
 
@@ -143,6 +113,31 @@
             }, this); 
         }
 
+
+        function make_disk() {
+            disk = game.add.sprite(490, 30, "ball");
+            disk.width = 50;
+            disk.height = 50;
+            game.physics.arcade.enable(disk);
+            disk.anchor.setTo(0.5, 0.5);
+            disk.body.collideWorldBounds = true;
+        }
+
+        function make_particles() {
+            particles = game.add.group();
+            for(var i = 0; i < 150; i++) {
+                prtcle = particles.create( GAME_WIDTH*Math.random(), 30, "particle");
+                prtcle.width = 5;
+                prtcle.height = 5; 
+            }
+        }
+
+        function reset() {
+            disk.destroy();
+            particles.destroy();
+            make_disk();
+            make_particles();
+        }
 
         // Approximate Gaussian Distribution by CLT
         // sum of iid variables approaches normal distribution
