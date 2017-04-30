@@ -49,47 +49,73 @@
         <div id="game"></div>
         <br>
         <div id="buttons">
-            <button type="button" class="btn btn-primary" onclick="move_ball()">Move The Ball</button>
-            <button type="button" class="btn btn-primary" onclick="update_distribution_control()">Update Belief to Prior</button>
+            <button type="button" class="btn btn-primary" onclick="moveDisk()">Move The Ball</button>
+            <button type="button" class="btn btn-primary" onclick="updateDistributionControl()">Update Belief to Prior</button>
             <button type="button" class="btn btn-primary">Take Measurement</button>
             <button type="button" class="btn btn-primary">Update Belief to Posterior</button>
             <button type="button" class="btn btn-success">Looped Particle Filter</button>
-            <button type="button" class="btn btn-danger" onclick="reset()">Reset</button>
+            <button type="button" class="btn btn-danger" onclick="resetGame()">Reset</button>
         </div>
     </div>
     <script type="text/javascript">
-       
+
+        /* Parameters needed for the particle filter and their initial values
+        */
         var STEP_LENGTH = 50;
-        var step_displacement = STEP_LENGTH; 
+        var control_measurement = STEP_LENGTH;
         var ST_COV = 100;
 
+        /* Phaser Game Declaration - creates the game world within the 'game' div of 
+        *  the webpage
+        */
         var GAME_WIDTH = 1077;
         var GAME_HEIGHT = 60;
-        var game = new Phaser.Game(GAME_WIDTH, GAME_HEIGHT, Phaser.AUTO, 'game', 
-                {preload: preload, create: create, update: update, render: render});
+        var game = new Phaser.Game(GAME_WIDTH, 
+                                GAME_HEIGHT, 
+                                Phaser.AUTO, 
+                                'game', 
+                                {preload: preload, 
+                                create: create, 
+                                update: update, 
+                                render: render});
         
+        /* Game world preload function is used to load images that are used to display
+        *  disk and particles
+        */
         function preload() {
             game.load.image("ball", "nav.png");
             game.load.image("particle", "nav.svg");            
         }
 
+        /* Game world create function is used to create disk and particles for the first
+        *  time, and to also set the physics and background color of the game world.
+        */
         function create() {
             game.stage.backgroundColor = "#FFFFFFF";
             game.physics.startSystem(Phaser.Physics.ARCADE);
-            make_disk();
-            make_particles();
+            makeDisk();
+            makeParticles();
 
         }
 
+        /* Game world update function is used for real time game actions - not needed.
+        */
         function update() {
             
         }
 
+        /* Game world render function is used for debugging game physics - not needed.
+        */
         function render() {
 
         }
 
-        function move_ball() {
+        /* moveDisk moves the yellow disk. With equal probability, it will move right
+        *  or left with a step length. If it is too close to left or right boundaries
+        *  the disk will move in the other direction to remain within game world bounds 
+        */
+        function moveDisk() {
+            var step_displacement = STEP_LENGTH; 
             if (disk.x > GAME_WIDTH - 1.5*disk.width) { 
                 step_displacement = -STEP_LENGTH;
             }
@@ -105,16 +131,34 @@
                 } 
             }
             disk.x += step_displacement;
+            control_measurement = step_displacement + ST_COV*randN();
         }
 
-        function update_distribution_control() {
+        /* updateDistributionControl updates the particles' position depending on the
+        *  movement of the disk. State Transition Noise is introduced to account for 
+        *  noisy disk movement.
+        */
+        function updateDistributionControl() {
             particles.forEach(function(prtcl) {
-                prtcl.x += (step_displacement + ST_COV*randn());
+                prtcl.x += (control_measurement + ST_COV*randN());
             }, this); 
         }
 
+        /* resetGame destroys the disk and the particles, and recreates them at their
+        *  initial positions.
+        */
+        function resetGame() {
+            disk.destroy();
+            particles.destroy();
+            makeDisk();
+            makeParticles();
+        }
 
-        function make_disk() {
+        /* makeDisk generates the yellow disk, whose position is estimated by particle
+        *  filter. The disk is a sprite on which ARCADE physics is applied so that it
+        *  stays within the game world bounds
+        */
+        function makeDisk() {
             disk = game.add.sprite(490, 30, "ball");
             disk.width = 50;
             disk.height = 50;
@@ -123,7 +167,11 @@
             disk.body.collideWorldBounds = true;
         }
 
-        function make_particles() {
+        /* makeParticles generates a Phaser group of sprites which will represent the
+        *  particles in the particle filter. The distribution of particles represents
+        *  the filter's belief of where the yellow disk is.
+        */
+        function makeParticles() {
             particles = game.add.group();
             for(var i = 0; i < 150; i++) {
                 prtcle = particles.create( GAME_WIDTH*Math.random(), 30, "particle");
@@ -132,16 +180,11 @@
             }
         }
 
-        function reset() {
-            disk.destroy();
-            particles.destroy();
-            make_disk();
-            make_particles();
-        }
-
-        // Approximate Gaussian Distribution by CLT
-        // sum of iid variables approaches normal distribution
-        function randn() {
+        /* randN generates a normally distributed random number, with mean 0 and variance 1
+        *  by adding 12 uniformly distributed random variables within [0,1] and subtracting
+        *  the expected value, which is 6 - The result is N(0, 1) 
+        */
+        function randN() {
             var numsamples = 12
             var rand = 0;
             for (var i = 0; i < numsamples; i++) {
@@ -150,6 +193,11 @@
             return (rand - (numsamples/2));
         }
 
+        
+        function takeMeasurement() {
+            
+        }
+        
     </script>
 </body>
 </html>
