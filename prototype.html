@@ -1,0 +1,180 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>FootPath Prototype</title>
+    <script src="phaser.min.js"></script>
+</head>
+<body>
+    <div id="gamecontainer"></div>
+    <script>
+        "use strict"
+
+        const GAMEWIDTH = 1000;
+        const GAMEHEIGHT = 500;
+        const PADDING = 10;
+        const PATHNUMBERSTEPS = 20;
+        const PATHSTEPLENGTH = 75;
+        const USERSTEPERROR = 50;
+        const USERANGLEERROR = 1.5;
+        const EPSILON = 15;
+        const ANGLECHANGE = Math.PI / 4;
+        const INITX = 20;
+        const INITY = 20;
+        const NORMALAPPROX = 20;
+
+        let pathLines, pathPoints, cornerPoints, userPoints, userLines;
+        
+        let userSprite, userPathIndex;
+   
+        let normalRandom = function() {
+            let rnumber = 0;
+            for (let i = 0; i < NORMALAPPROX; i++) {
+                rnumber += Math.random();
+            }
+            rnumber /= NORMALAPPROX;
+            rnumber -= 0.5;
+            return rnumber;
+        }
+
+        let angleChange = function() {
+            let rnumber = Math.random();
+            if (rnumber < 0.25) { return -Math.PI / 4; }
+            else if (rnumber > 0.75) { return Math.PI / 4; }
+            else { return 0; }
+        }
+ 
+        let withinWorldBounds = function(x, y) {
+            if (x < PADDING)              { return false; }
+            if (x > GAMEWIDTH - PADDING)  { return false; }
+            if (y < PADDING)              { return false; }
+            if (y > GAMEHEIGHT - PADDING) { return false; }
+            return true;
+        }
+        
+        let generatePathPoints = function(initX, initY) {
+            let points = Array(), nextX, nextY;
+            let currentX = initX; 
+            let currentY = initY; 
+            points.push( new Phaser.Point(currentX,currentY) );
+            for (let i = 1; i <= PATHNUMBERSTEPS; i++) {
+                let angle = angleChange()
+                nextX = currentX + Math.round( PATHSTEPLENGTH*Math.cos(angle) );
+                nextY = currentY + Math.round( PATHSTEPLENGTH*Math.sin(angle) ); 
+                while (!withinWorldBounds(nextX, nextY)) {
+                    angle += ANGLECHANGE;
+                    nextX = currentX + Math.round( PATHSTEPLENGTH*Math.cos(angle) );
+                    nextY = currentY + Math.round( PATHSTEPLENGTH*Math.sin(angle) ); 
+                }
+                currentX = nextX;
+                currentY = nextY;
+                points.push( new Phaser.Point(currentX,currentY) );
+            } 
+            return points;
+        }
+
+        let getLines = function(points) {
+            let lines = Array();
+            for (let i = 0; i < points.length-1; i++) {
+                lines.push( new Phaser.Line(points[i].x, points[i].y, points[i+1].x, points[i+1].y) );
+            }
+            return lines;
+        }
+          
+        let getPathCorners = function(points, lines) {
+            let angle = lines[0].angle;
+            let pathCorners = Array();
+            for (let i = 0; i < PATHNUMBERSTEPS; i++) {
+                if (lines[i].angle != angle) {
+                    pathCorners.push(points[i]);
+                    angle = lines[i].angle;
+                }
+            }
+            pathCorners.push(points[PATHNUMBERSTEPS]);
+            return pathCorners;
+        }
+        
+        let generateUserMovement = function(initX, initY, cornerPoints) {
+            let userMovementArray = Array();
+            let cornerIndex = 0, distance, userStepLength, nextX = -1, nextY = -1;
+            let currentUserPosition = new Phaser.Point(initX, initY); 
+            userMovementArray.push(currentUserPosition);
+            while (cornerIndex < cornerPoints.length) {
+                let distance = Phaser.Point.distance(cornerPoints[cornerIndex], currentUserPosition);
+                if (distance > PATHSTEPLENGTH) {
+                    userStepLength = Math.round( PATHSTEPLENGTH + USERSTEPERROR*normalRandom() );
+                } 
+                else if (distance > EPSILON) {
+                    userStepLength = Math.round( distance + normalRandom() );
+                }
+                else {
+                    cornerIndex++;
+                    continue;
+                } 
+                let angle = Phaser.Point.angle(cornerPoints[cornerIndex], currentUserPosition) + USERANGLEERROR*normalRandom();
+                nextX = currentUserPosition.x + userStepLength*Math.cos(angle);
+                nextY = currentUserPosition.y + userStepLength*Math.sin(angle);
+                while (!withinWorldBounds(nextX, nextY)) {
+                    let angle = Phaser.Point.angle(cornerPoints[cornerIndex], currentUserPosition) + USERANGLEERROR*normalRandom();
+                    nextX = currentUserPosition.x + userStepLength*Math.cos(angle);
+                    nextY = currentUserPosition.y + userStepLength*Math.sin(angle);
+                }
+                currentUserPosition = new Phaser.Point(nextX, nextY);
+                userMovementArray.push(currentUserPosition);
+            }
+
+            return userMovementArray;                
+        }
+ 
+        let game = new Phaser.Game(GAMEWIDTH, GAMEHEIGHT, Phaser.AUTO, "gamecontainer");
+ 
+        let FootPath = {
+            preload: function() {
+               game.load.image("userSprite", "navigation.png"); 
+            },
+            create: function() {
+                
+                game.stage.backgroundColor = "#124126"
+                pathPoints = generatePathPoints(INITX, INITY);
+                pathLines = getLines(pathPoints);
+                cornerPoints = getPathCorners(pathPoints, pathLines);
+                userPoints = generateUserMovement(INITX, INITY, cornerPoints);
+                userLines = getLines(userPoints);
+
+                userSprite = game.add.sprite(userPoints[0].x, userPoints[0].y, "userSprite");
+                userSprite.anchor = new Phaser.Point(0.5, 0.5);
+                userSprite.width = 20;
+                userSprite.height = 20;
+                userSprite.rotation += Math.PI / 4 + 0.1; // Correction Term
+                userSprite.rotation += userLines[0].angle;               
+ 
+            },
+            update: function() {
+
+            },
+            render: function() {
+                for (let i = 0; i < PATHNUMBERSTEPS; i++) { 
+                    game.debug.geom(pathLines[i], "rgba(0,200,0,1)");
+                    game.debug.geom(pathPoints[i], "rgba(0,200,0,1)");
+                }
+                
+                game.debug.geom(pathPoints[PATHNUMBERSTEPS]);
+                
+                for (let i = 0 ; i < cornerPoints.length; i++) {
+                    game.debug.geom(cornerPoints[i], "rgba(0,200,200,1)");
+                }
+
+                for (let i = 0; i < userLines.length; i++) { 
+                    game.debug.geom(userLines[i], "rgba(200,200,0,1)");
+                    game.debug.geom(userPoints[i], "rgba(200,200,0,1)");
+                }
+                game.debug.geom(userPoints[userLines.length], "rgba(200,200,0,1)");
+            }
+        };
+
+        game.state.add("Prototype-FootPath", FootPath);    
+        game.state.start("Prototype-FootPath");
+        
+    </script>
+</body>
+</html>
