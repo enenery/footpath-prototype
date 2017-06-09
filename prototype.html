@@ -146,7 +146,8 @@
                 userSprite.width = 20;
                 userSprite.height = 20;
                 userSprite.rotation += Math.PI / 4 + 0.1; // Correction Term
-                userSprite.rotation += userLines[0].angle;               
+                userSprite.rotation += userLines[0].angle;  
+                userPathIndex = 0;             
  
             },
             update: function() {
@@ -169,6 +170,17 @@
                     game.debug.geom(userPoints[i], "rgba(200,200,0,1)");
                 }
                 game.debug.geom(userPoints[userLines.length], "rgba(200,200,0,1)");
+            },
+            updateUser: function() {
+                if (userPathIndex < userPoints.length) {
+                    userPathIndex++;
+                    userSprite.x = userPoints[userPathIndex].x;
+                    userSprite.y = userPoints[userPathIndex].y;
+                    if (userPathIndex >= 2) {
+                        userSprite.rotation -= userLines[userPathIndex-2].angle;
+                        userSprite.rotation += userLines[userPathIndex-1].angle;
+                    }
+                }
             }
         };
 
@@ -176,5 +188,7 @@
         game.state.start("Prototype-FootPath");
         
     </script>
+    <br />
+    <button onclick="FootPath.updateUser()">User Move</button>
 </body>
 </html>
