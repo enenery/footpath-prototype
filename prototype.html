@@ -13,37 +13,56 @@
         const GAMEWIDTH = 1000;
         const GAMEHEIGHT = 500;
         const PADDING = 10;
-        const PATHNUMBERSTEPS = 20;
-        const PATHSTEPLENGTH = 75;
-        const USERSTEPERROR = 50;
+        const PATHNUMBERSTEPS = 50;
+        const PATHSTEPLENGTH = 30;
+        const USERSTEPERROR = 20;
         const USERANGLEERROR = 1.5;
         const EPSILON = 15;
         const ANGLECHANGE = Math.PI / 4;
         const INITX = 20;
         const INITY = 20;
-        const NORMALAPPROX = 20;
+        const NUMUNIFORMVARS = 6;
 
-        let pathLines, pathPoints, cornerPoints, userPoints, userLines;
-        
+        let pathLines, pathPoints, cornerPoints, userPoints, userLines; 
         let userSprite, userPathIndex;
-   
+  
+        /*
+        * Approximates a Standard Normal Random Variable 
+        *   by Averaging 6 Uniform Random Variables
+        *   and subtracting 0.5
+        * 
+        * @method
+        * @return{Number}
+        */
         let normalRandom = function() {
-            let rnumber = 0;
-            for (let i = 0; i < NORMALAPPROX; i++) {
-                rnumber += Math.random();
+            let uniformRandomSum = 0;
+            for (let i = 0; i < NUMUNIFORMVARS; i++) {
+                uniformRandomSum += Math.random();
             }
-            rnumber /= NORMALAPPROX;
-            rnumber -= 0.5;
-            return rnumber;
+            let normalRandomNumber = (uniformRandomSum / NUMUNIFORMVARS) - 0.5;
+            return normalRandomNumber;
         }
 
+        /* 
+        * Gives the probabilities that the Path should go 45 degrees left, 45 degrees right or straight
+        *   at each step
+        *
+        * @method
+        * @return{Number} - Angle Value
+        */
         let angleChange = function() {
             let rnumber = Math.random();
-            if (rnumber < 0.25) { return -Math.PI / 4; }
-            else if (rnumber > 0.75) { return Math.PI / 4; }
+            if (rnumber < 0.05) { return -Math.PI / 4; }
+            else if (rnumber > 0.95) { return Math.PI / 4; }
             else { return 0; }
         }
  
+        /* 
+        * Checks to see whether the x and y coordinates are within world bounds
+        *
+        * @method
+        * @return{Boolean}
+        */
         let withinWorldBounds = function(x, y) {
             if (x < PADDING)              { return false; }
             if (x > GAMEWIDTH - PADDING)  { return false; }
@@ -52,27 +71,41 @@
             return true;
         }
         
+        /* 
+        * Generates the ideal path for the FootPath Algorithm
+        *
+        * @method
+        * @return{Array of Phaser Points}
+        */   
         let generatePathPoints = function(initX, initY) {
             let points = Array(), nextX, nextY;
             let currentX = initX; 
             let currentY = initY; 
+            let currentAngle = 0;
             points.push( new Phaser.Point(currentX,currentY) );
             for (let i = 1; i <= PATHNUMBERSTEPS; i++) {
-                let angle = angleChange()
-                nextX = currentX + Math.round( PATHSTEPLENGTH*Math.cos(angle) );
-                nextY = currentY + Math.round( PATHSTEPLENGTH*Math.sin(angle) ); 
+                let nextAngle = currentAngle + angleChange()
+                nextX = currentX + Math.round( PATHSTEPLENGTH*Math.cos(nextAngle) );
+                nextY = currentY + Math.round( PATHSTEPLENGTH*Math.sin(nextAngle) ); 
                 while (!withinWorldBounds(nextX, nextY)) {
-                    angle += ANGLECHANGE;
-                    nextX = currentX + Math.round( PATHSTEPLENGTH*Math.cos(angle) );
-                    nextY = currentY + Math.round( PATHSTEPLENGTH*Math.sin(angle) ); 
+                    nextAngle += ANGLECHANGE;
+                    nextX = currentX + Math.round( PATHSTEPLENGTH*Math.cos(nextAngle) );
+                    nextY = currentY + Math.round( PATHSTEPLENGTH*Math.sin(nextAngle) ); 
                 }
                 currentX = nextX;
                 currentY = nextY;
+                currentAngle = nextAngle;
                 points.push( new Phaser.Point(currentX,currentY) );
             } 
             return points;
         }
 
+        /*
+        * Takes in an array of Phaser Points and generates a Phaser line between every two points 
+        *
+        * @method
+        * @return{Array of Phaser Lines}
+        */
         let getLines = function(points) {
             let lines = Array();
             for (let i = 0; i < points.length-1; i++) {
@@ -80,7 +113,14 @@
             }
             return lines;
         }
-          
+         
+        /*
+        * Takes in array of Phaser Points and array of Phaser Lines and creates a
+        *   subset of the array of points that includes only corners
+        *
+        * @method
+        * @return{Array of Phaser Points}
+        */ 
         let getPathCorners = function(points, lines) {
             let angle = lines[0].angle;
             let pathCorners = Array();
@@ -93,7 +133,13 @@
             pathCorners.push(points[PATHNUMBERSTEPS]);
             return pathCorners;
         }
-        
+            
+        /*
+        * Generates a path that the user takes, which is more noisy than the ideal path
+        *
+        * @method
+        * @result{Array of Phaser Points}
+        */
         let generateUserMovement = function(initX, initY, cornerPoints) {
             let userMovementArray = Array();
             let cornerIndex = 0, distance, userStepLength, nextX = -1, nextY = -1;
@@ -126,9 +172,14 @@
             return userMovementArray;                
         }
  
+        let footpathEstimate = function(sprite, userLines, userPathIndex, pathLines, userPathIndex) {
+            
+
+        }
+
         let game = new Phaser.Game(GAMEWIDTH, GAMEHEIGHT, Phaser.AUTO, "gamecontainer");
  
-        let FootPath = {
+        let ProtoType = {
             preload: function() {
                game.load.image("userSprite", "navigation.png"); 
             },
@@ -143,8 +194,8 @@
 
                 userSprite = game.add.sprite(userPoints[0].x, userPoints[0].y, "userSprite");
                 userSprite.anchor = new Phaser.Point(0.5, 0.5);
-                userSprite.width = 20;
-                userSprite.height = 20;
+                userSprite.width = 30;
+                userSprite.height = 30;
                 userSprite.rotation += Math.PI / 4 + 0.1; // Correction Term
                 userSprite.rotation += userLines[0].angle;  
                 userPathIndex = 0;             
@@ -184,11 +235,11 @@
             }
         };
 
-        game.state.add("Prototype-FootPath", FootPath);    
-        game.state.start("Prototype-FootPath");
+        game.state.add("ProtoType", ProtoType);    
+        game.state.start("ProtoType");
         
     </script>
     <br />
-    <button onclick="FootPath.updateUser()">User Move</button>
+    <button onclick="ProtoType.updateUser()">User Move</button>
 </body>
 </html>
