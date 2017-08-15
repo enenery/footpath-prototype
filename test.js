@@ -11,8 +11,8 @@ CanvasUtils.setCanvasAndContext(CANVAS_ID);
 CanvasUtils.setBackgroundColor(BACKGROUND_COLOR);
 
 let world = new World( POLYGON1 );
-world.addObstacle( POLYGON2 );
-world.addObstacle( POLYGON3 );
+//world.addObstacle( POLYGON2 );
+//world.addObstacle( POLYGON3 );
 let idealPath = PATH1;
 
 CanvasUtils.drawWorld(world, FOREGROUND_COLOR, BACKGROUND_COLOR, DARK_BLUE);
