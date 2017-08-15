@@ -1,5 +1,6 @@
 # footpath-prototype
 Initial Simulation Experiment Plan
+
 The purpose of our experiment is to compare the localization accuracy of FootPath and FootPath + Vista (only equipped on one side) + Particle Filter algorithm.
 
 There are following map & user behavior variations:
