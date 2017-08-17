@@ -14,10 +14,11 @@ User’s path types (UP):
 2. The expected path involves turns
 
 Wall types (W): (this matters if user is walking a path along the wall)
-1. The wall contains doors 
-2. The wall doesn’t contain doors 
+1. The wall contains closed doors 
+2. The wall contains open doors
+3. The wall doesn’t contain doors 
 
-To consider all combination of above cases, we have 2^3 = 8 test cases.
+To consider all combination of above cases, we have 2*2*3 = 12 test cases.
 
 
 
