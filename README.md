@@ -17,6 +17,7 @@ Wall types:
 1. The wall contains closed doors 
 2. The wall contains open doors
 3. The wall doesn’t contain doors 
+4. The wall contains closed and open doors (random)
 
 To consider all combination of above cases, we have 12 test cases.
 
