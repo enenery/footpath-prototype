@@ -22,9 +22,9 @@ Wall types:
 To consider all combination of above cases, we have 12 test cases.
 
 We will compare the accuracy of FootPath and FootPath + Vista (only equipped on one side) + Particle Filter algorithm in the following ways:
-1. visual: We'll provide a graph with three paths, each in different color for each test case
-<br/ >a.user's actual path 
-b.  footpath's estimated user's path 
+1. visual: We'll provide a graph with three paths, each in different color for each test case  
+a.user's actual path  
+b.  footpath's estimated user's path  
 c.  footpath+vista+particle filter estimated user's path
 
 2. distance: We'll calculate the distance between the followings using the distance between two points formula:
